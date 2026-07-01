@@ -1,8 +1,17 @@
+import { useState } from 'react';
+import Layout from './components/layout/Layout';
+import Navbar from './components/layout/Navbar';
+
 function App() {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl text-accent-500">TaskVerse</h1>
-    </div>
+    <Layout>
+      <Navbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* board goes here in the next steps */}
+      </main>
+    </Layout>
   );
 }
 
