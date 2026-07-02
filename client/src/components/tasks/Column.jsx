@@ -20,7 +20,7 @@ function Column({ status, tasks, onEdit, onDelete }) {
         <span className="text-xs text-stone-600">{tasks.length}</span>
       </div>
 
-      <div ref={setNodeRef} className="space-y-3 min-h-[200px]">
+      <div ref={setNodeRef} className="space-y-3 min-h-[65vh]">
         <SortableContext items={tasks.map((t) => t._id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
             <TaskCard key={task._id} task={task} onEdit={onEdit} onDelete={onDelete} />

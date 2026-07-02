@@ -7,7 +7,7 @@ import Textarea from '../ui/Textarea';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 
-function TaskForm({ task, onSubmit, onCancel }) {
+function TaskForm({ task, prefillTitle, onSubmit, onCancel }) {
   const {
     register,
     handleSubmit,
@@ -36,8 +36,10 @@ function TaskForm({ task, onSubmit, onCancel }) {
         dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
         tags: task.tags?.join(', ') || '',
       });
+    } else if (prefillTitle) {
+      reset({ title: prefillTitle, description: '', status: 'todo', priority: 'medium', dueDate: '', tags: '' });
     }
-  }, [task, reset]);
+  }, [task, prefillTitle, reset]);
 
   const submitHandler = (data) => {
     const payload = {

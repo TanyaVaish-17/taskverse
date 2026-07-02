@@ -1,20 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Layout from './components/layout/Layout';
 import Navbar from './components/layout/Navbar';
+import Sidebar from './components/layout/Sidebar';
 import Board from './components/tasks/Board';
 import TaskForm from './components/tasks/TaskForm';
+import CommandPalette from './components/tasks/CommandPalette';
 import Modal from './components/ui/Modal';
 import Button from './components/ui/Button';
 import { useTasks } from './hooks/useTasks';
-import { FiPlus } from 'react-icons/fi';
+import { filterTasks, sortTasks, getAllTags } from './utils/taskUtils';
+import { FiPlus, FiFilter } from 'react-icons/fi';
 
 function App() {
   const { tasks, loading, error, addTask, editTask, removeTask, reorderTasks } = useTasks();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [prefillTitle, setPrefillTitle] = useState('');
+  const [filters, setFilters] = useState({ priority: 'all', tags: [], dueDate: 'all' });
+  const [sortBy, setSortBy] = useState('order');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const openCreateModal = () => {
+  // global shortcut for the command palette
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const availableTags = useMemo(() => getAllTags(tasks), [tasks]);
+
+  const visibleTasks = useMemo(
+    () => sortTasks(filterTasks(tasks, filters), sortBy),
+    [tasks, filters, sortBy]
+  );
+
+  // counts shown next to each priority option in the sidebar — respects tag/due date filters
+  // but ignores the priority filter itself so all counts stay visible at once
+  const priorityCounts = useMemo(() => {
+    const filtered = filterTasks(tasks, { ...filters, priority: 'all' });
+    return {
+      all: filtered.length,
+      high: filtered.filter((t) => t.priority === 'high').length,
+      medium: filtered.filter((t) => t.priority === 'medium').length,
+      low: filtered.filter((t) => t.priority === 'low').length,
+    };
+  }, [tasks, filters]);
+
+  const openCreateModal = (title = '') => {
     setEditingTask(null);
+    setPrefillTitle(title);
     setModalOpen(true);
   };
 
@@ -53,33 +94,56 @@ function App() {
 
   return (
     <Layout>
-      <Navbar onOpenCommandPalette={openCreateModal} />
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-serif text-stone-100">Your board</h2>
-            <p className="text-stone-500 text-sm mt-1">
-              {tasks.length} task{tasks.length !== 1 ? 's' : ''} total
-            </p>
+      <Navbar onOpenCommandPalette={() => setPaletteOpen(true)} />
+
+      <div className="flex">
+        <Sidebar
+          filters={filters}
+          onFilterChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
+          onClearFilters={() => setFilters({ priority: 'all', tags: [], dueDate: 'all' })}
+          availableTags={availableTags}
+          priorityCounts={priorityCounts}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+          isMobileOpen={mobileFilterOpen}
+          onMobileClose={() => setMobileFilterOpen(false)}
+        />
+
+        <main className="flex-1 min-w-0 px-8 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-serif text-stone-100">Your board</h2>
+              <p className="text-stone-500 text-sm mt-1">
+                {tasks.length} task{tasks.length !== 1 ? 's' : ''} total
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMobileFilterOpen(true)}
+                className="md:hidden p-2 rounded-lg border border-base-700 text-stone-400 hover:text-stone-200 transition-colors"
+              >
+                <FiFilter size={16} />
+              </button>
+              <Button onClick={() => openCreateModal()} className="flex items-center gap-2">
+                <FiPlus size={16} />
+                New task
+              </Button>
+            </div>
           </div>
-          <Button onClick={openCreateModal} className="flex items-center gap-2">
-            <FiPlus size={16} />
-            New task
-          </Button>
-        </div>
 
-        {loading && <p className="text-stone-500">Loading tasks...</p>}
-        {error && <p className="text-red-400">{error}</p>}
+          {loading && <p className="text-stone-500">Loading tasks...</p>}
+          {error && <p className="text-red-400">{error}</p>}
 
-        {!loading && !error && (
-          <Board
-            tasks={tasks}
-            onEdit={openEditModal}
-            onDelete={removeTask}
-            onDragEnd={handleDragEnd}
-          />
-        )}
-      </main>
+          {!loading && !error && (
+            <Board
+              tasks={visibleTasks}
+              onEdit={openEditModal}
+              onDelete={removeTask}
+              onDragEnd={handleDragEnd}
+            />
+          )}
+        </main>
+      </div>
 
       <Modal
         isOpen={modalOpen}
@@ -88,10 +152,19 @@ function App() {
       >
         <TaskForm
           task={editingTask}
+          prefillTitle={prefillTitle}
           onSubmit={handleFormSubmit}
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+
+      <CommandPalette
+        isOpen={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        tasks={tasks}
+        onCreateNew={openCreateModal}
+        onSelectTask={openEditModal}
+      />
     </Layout>
   );
 }

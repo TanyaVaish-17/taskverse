@@ -12,7 +12,7 @@ function Board({ tasks, onEdit, onDelete, onDragEnd }) {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="flex gap-6 overflow-x-auto pb-4">
+      <div className="flex gap-8 overflow-x-auto pb-4">
         {columns.map((status) => (
           <Column
             key={status}
