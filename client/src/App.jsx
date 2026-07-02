@@ -97,7 +97,10 @@ function App() {
 
   return (
     <Layout>
-      <Navbar onOpenCommandPalette={() => setPaletteOpen(true)} />
+      <Navbar
+      onOpenCommandPalette={() => setPaletteOpen(true)}
+      isSidebarCollapsed={sidebarCollapsed}
+      />
 
       <div className="flex">
         <Sidebar
