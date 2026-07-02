@@ -92,3 +92,60 @@ exports.reorderTasks = async (req, res) => {
     res.status(500).json({ message: 'Server error reordering tasks', error: error.message });
   }
 };
+
+// @desc    Get task analytics (completed this week, overdue count, etc.)
+// @route   GET /api/tasks/analytics
+exports.getAnalytics = async (req, res) => {
+    try {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+  
+      const [statusCounts, completedThisWeek, overdueCount, priorityCounts] = await Promise.all([
+        // count of tasks per status
+        Task.aggregate([
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ]),
+  
+        // tasks marked done, updated since start of this week
+        Task.countDocuments({
+          status: 'done',
+          updatedAt: { $gte: startOfWeek },
+        }),
+  
+        // tasks with a due date in the past that aren't done
+        Task.countDocuments({
+          dueDate: { $lt: now, $ne: null },
+          status: { $ne: 'done' },
+        }),
+  
+        // count of tasks per priority
+        Task.aggregate([
+          { $group: { _id: '$priority', count: { $sum: 1 } } },
+        ]),
+    ]);
+  
+    // convert aggregate arrays into simple key-value objects
+    const statusMap = statusCounts.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {});
+    const priorityMap = priorityCounts.reduce((acc, p) => ({ ...acc, [p._id]: p.count }), {});
+    const byStatus = {
+        todo: statusMap.todo || 0,
+        inProgress: statusMap['in-progress'] || 0,
+        done: statusMap.done || 0,
+    };
+    res.status(200).json({
+        total: byStatus.todo + byStatus.inProgress + byStatus.done,
+        byStatus,
+        byPriority: {
+            high: priorityMap.high || 0,
+            medium: priorityMap.medium || 0,
+            low: priorityMap.low || 0,
+        },
+        completedThisWeek,
+        overdueCount,
+    });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error fetching analytics', error: error.message });
+    }
+};

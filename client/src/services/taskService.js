@@ -12,4 +12,7 @@ export const taskService = {
   remove: (id) => api.delete(`/tasks/${id}`).then((res) => res.data),
 
   reorder: (tasks) => api.patch('/tasks/reorder', { tasks }).then((res) => res.data),
+
+  getAnalytics: () => api.get('/tasks/analytics').then((res) => res.data),
+  
 };

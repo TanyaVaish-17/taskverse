@@ -5,14 +5,17 @@ import Sidebar from './components/layout/Sidebar';
 import Board from './components/tasks/Board';
 import TaskForm from './components/tasks/TaskForm';
 import CommandPalette from './components/tasks/CommandPalette';
+import AnalyticsStrip from './components/tasks/AnalyticsStrip';
 import Modal from './components/ui/Modal';
 import Button from './components/ui/Button';
 import { useTasks } from './hooks/useTasks';
+import { useAnalytics } from './hooks/useAnalytics';
 import { filterTasks, sortTasks, getAllTags } from './utils/taskUtils';
 import { FiPlus, FiFilter } from 'react-icons/fi';
 
 function App() {
   const { tasks, loading, error, addTask, editTask, removeTask, reorderTasks } = useTasks();
+  const { analytics, loading: analyticsLoading } = useAnalytics(tasks.length);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -110,25 +113,29 @@ function App() {
         />
 
         <main className="flex-1 min-w-0 px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-serif text-stone-100">Your board</h2>
-              <p className="text-stone-500 text-sm mt-1">
-                {tasks.length} task{tasks.length !== 1 ? 's' : ''} total
-              </p>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-3xl font-serif text-stone-100">Your board</h2>
+                <p className="text-stone-500 text-sm mt-1">
+                  {tasks.length} task{tasks.length !== 1 ? 's' : ''} total
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMobileFilterOpen(true)}
+                  className="md:hidden p-2 rounded-lg border border-base-700 text-stone-400 hover:text-stone-200 transition-colors"
+                >
+                  <FiFilter size={16} />
+                </button>
+                <Button onClick={() => openCreateModal()} className="flex items-center gap-2">
+                  <FiPlus size={16} />
+                  New task
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMobileFilterOpen(true)}
-                className="md:hidden p-2 rounded-lg border border-base-700 text-stone-400 hover:text-stone-200 transition-colors"
-              >
-                <FiFilter size={16} />
-              </button>
-              <Button onClick={() => openCreateModal()} className="flex items-center gap-2">
-                <FiPlus size={16} />
-                New task
-              </Button>
-            </div>
+
+            <AnalyticsStrip analytics={analytics} loading={analyticsLoading} />
           </div>
 
           {loading && <p className="text-stone-500">Loading tasks...</p>}
