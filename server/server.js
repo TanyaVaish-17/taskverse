@@ -12,7 +12,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://taskverse-tau.vercel.app/', 
+    'https://taskverse-tau.vercel.app', 
   ],
 }));
 app.use(express.json());
